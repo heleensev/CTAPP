@@ -1,0 +1,49 @@
+data_info:
+- meta_data:
+    build: hg17
+    ethnicity: AFR
+    n_studies: 20000
+    phenotype: CVD
+  properties:
+    head_to_ref:
+    - 1
+    - 0
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    header_idx:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 7
+    - 8
+    - 9
+    headers:
+    - CHR
+    - SNP
+    - BP
+    - A1
+    - A2
+    - FRQ
+    - Effect
+    - SE
+    - P
+    path: /home/sevvy/Scripts/deploy/data/test/test_s.csv
+    sep: "\t"
+    skip: 0
+  studyID: GWAS01
+params:
+- chunksize: 20
+  method: GWAS_process
+  mongo: true
+  operation: GWAS_process
+  runtime: 00:10:00
+  subchunk: 5
+  vmem: 1G

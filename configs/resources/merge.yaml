@@ -1,0 +1,43 @@
+parameters:
+  - chunksize: 100000
+    subchunk: 10000
+    operation: liftover
+    method: subparallel
+    mongo: true
+    runtime: 00:10:00
+    vmem: 15G
+
+  - chunksize: 0
+    subchunk:
+    operation: liftover
+    method: subparallel
+    mongo: true
+    runtime: 00:10:00
+    vmem: 15G
+
+data_info:
+  - properties:
+      headers:
+        - rshigh
+        - rscur
+      header_indices:
+        - 0
+        - 6
+      separator: "\t"
+      skip: 0
+
+    meta_data:
+      path: /home/dhl_ec/hseverin/deploy/data/RsMergeArchGRCh38.bcp.gz
+
+  - properties:
+      headers:
+        - rscur
+        - comment
+      header_indices:
+        - 0
+        - 4
+      separator: "\t"
+      skip: 0
+
+    meta_data:
+      path: /home/dhl_ec/hseverin/deploy/data/SNPHistory.bcp.gz

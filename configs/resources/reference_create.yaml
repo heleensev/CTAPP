@@ -1,0 +1,21 @@
+parameters:
+  - chunksize: 500000
+    subchunk: 100000
+    operation: 1000g
+    method: subparallel
+    mongo: true
+    runtime: 00:45:00
+    vmem: 5G
+    mon_vmem: 30G
+
+data_info:
+  - properties:
+      headers:
+      header_indices: []
+      separator: "\t"
+      skip: 252
+
+    meta_data:
+      path: /home/dhl_ec/hseverin/deploy/data/ALL.wgs.phase3_shapeit2_mvncall_integrated_v5b.20130502.sites.vcf.gz
+#/home/dhl_ec/hseverin/deploy/data/all_test.csv
+#/home/dhl_ec/hseverin/deploy/data/ALL.wgs.phase3_shapeit2_mvncall_integrated_v5b.20130502.sites.vcf.gz

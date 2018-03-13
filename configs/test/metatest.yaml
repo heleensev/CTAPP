@@ -1,0 +1,182 @@
+###############################################################################
+# README                                                                      #
+#                                                                             #
+# All attributes under the indent of "meta_data" need to be filled in         #
+# the "build" and "ethnicity" attributes are optional,                        #
+# All attributes under the indent of "properties" do not need to be filled in #
+# unless failure of column classification, then:                              #
+# Fill in the indices corresponding to the "headers" under "header_idx"       #
+# the "allowed" attribute show restrictions for input                         #
+# Fill in all values in-line of : ,except for the list types eg. 'headers'    #
+# The first element of a list starts under the keyword, with indent.          #
+# The comments describe the individual attributes below                       #
+# A "-" signifies a new document, the attributes of this document all need to #
+# be in the same indent of this hyphen (hyphen + space)                       #
+###############################################################################
+
+parameters:
+
+    # chunk size for the processing GWAS csv, type: integer
+    - chunksize: 20
+      # subchunk size for processing with threading, type: integer
+      subchunk: 5
+      # operation name, type: string
+      # allowed:
+      # liftover
+      # reference
+      # preparse
+      # process
+      operation: GWAS_process
+      # method of processing, type: string
+      # allowed:
+      # single
+      # parallel
+      # subparallel
+      method: subparallel
+      # mongo client required or not, type: boolean
+      # allowed:
+      # true
+      # false
+      mongo: true
+      # runtime for processing of one chunk, type: string
+      # format: hh:mm:ss (00:00:00)
+      runtime: 00:10:00
+       # memory use for single job, type: string
+       # format: digit(s)G (15G)
+      vmem: 1G
+
+data_info:
+    # may be modified, ensure unique values
+    # for all the studyIDs in this file
+    - studyID: GWAS01
+
+      properties:
+          # modify only if column classifier fails
+          # fill in with hyphens like under "allowed"
+          # change order of headers to match GWAS csv
+          # headers with * are required
+          # allowed:
+          # - *SNP
+          # - *CHR
+          # - *BP
+          # - *A1
+          # - *A2
+          # - *FRQ
+          # - *SE
+          # - *P
+          # - INFO
+          # - N
+          headers:
+          # modify only if column classifier fails
+          # fill in with hyphens like under "allowed"
+          # allowed:
+          # - 0
+          # - 1
+          # - 2
+          # - 3
+          # - 4
+          # - 5
+          # etc
+          header_indices:
+          # modify only if column classifier fails
+          separator:
+          # modify only if data contains unnecessary lines at start
+          skip: 0
+
+      meta_data:
+          # required field, type: string
+          path: /hpc/local/CentOS7/dhl_ec/software/ctapp/data/test/test_p.csv
+          # required field, type: string
+          effect_allele: A1
+          # required field if no study size column present, type: integer
+          n_studies: 200
+          # required field, type: string
+          # allowed:
+          # OR
+          # BETA
+          effect_type: OR
+          # required field, type: string
+          phenotype: CVD
+          # choose one / leave blank
+          # allowed:
+          # EUR
+          # AFR
+          # AMR
+          # EAS
+          # SAS
+          ethnicity: EUR
+          # choose one / leave blank
+          # allowed:
+          # hg16
+          # hg17
+          # hg18
+          # hg19
+          # hg38
+          build: hg18
+    # may be modified, ensure unique values
+    # for all the studyIDs in this file
+    - studyID: GWAS02
+
+      properties:
+          # modify only if column classifier fails
+          # fill in with hyphens like under "allowed"
+          # change order of headers to match GWAS csv
+          # headers with * are required
+          # allowed:
+          # - *SNP
+          # - *CHR
+          # - *BP
+          # - *A1
+          # - *A2
+          # - *FRQ
+          # - *SE
+          # - *P
+          # - INFO
+          # - N
+          headers:
+          # modify only if column classifier fails
+          # fill in with hyphens like under "allowed"
+          # allowed:
+          # - 0
+          # - 1
+          # - 2
+          # - 3
+          # - 4
+          # - 5
+          # etc
+          header_indices:
+          # modify only if column classifier fails
+          separator:
+          # modify only if data contains unnecessary lines at start
+          skip: 0
+
+      meta_data:
+          # required field, type: string
+          path: /hpc/local/CentOS7/dhl_ec/software/ctapp/data/test/test_p2.csv
+          # required field, type: string
+          effect_allele: A1
+          # required field if no study size column present, type: integer
+          n_studies: 160
+          # required field, type: string
+          # allowed:
+          # OR
+          # BETA
+          effect_type: OR
+          # required field, type: string
+          phenotype: CVD
+          # choose one / leave blank
+          # allowed:
+          # EUR
+          # AFR
+          # AMR
+          # EAS
+          # SAS
+          ethnicity: EUR
+          # choose one / leave blank
+          # allowed:
+          # hg16
+          # hg17
+          # hg18
+          # hg19
+          # hg38
+          build: hg18

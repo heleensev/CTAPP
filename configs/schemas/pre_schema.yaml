@@ -1,0 +1,79 @@
+studyID:
+  type: string
+
+properties:
+  type: dict
+  schema:
+
+    headers:
+      type: list
+      nullable: true
+      allowed:
+        - SNP
+        - CHR
+        - BP
+        - A1
+        - A2
+        - FRQ
+        - BETA
+        - OR
+        - SE
+        - P
+        - INFO
+        - N
+
+    header_indices:
+      type: list
+      nullable: true
+      schema:
+        type: integer
+
+    separator:
+      type: string
+      nullable: true
+
+    skip:
+      type: integer
+      nullable: true
+
+meta_data:
+  type: dict
+  schema:
+
+    path:
+      type: string
+    effect_allele:
+      type: string
+
+    n_studies:
+      type: integer
+      nullable: true
+
+    effect_type:
+      type: string
+      allowed:
+      - OR
+      - BETA
+
+    phenotype:
+      type: string
+
+    ethnicity:
+      type: string
+      nullable: true
+      allowed:
+        - EUR
+        - AFR
+        - AMR
+        - EAS
+        - SAS
+
+    build:
+      type: string
+      nullable: true
+      allowed:
+        - hg16
+        - hg17
+        - hg18
+        - hg19
+        - hg38

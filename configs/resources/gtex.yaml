@@ -1,0 +1,16 @@
+parameters:
+  - chunksize: 500000
+    subchunk: 100000
+    operation: 1000g
+    method: subparallel
+    mongo: true
+    runtime: 00:45:00
+    vmem: 20G
+    mon_vmem: 30G
+
+data_info:
+  - properties:
+      headers:
+      header_indices: []
+      separator: "\t"
+      skip: 252
