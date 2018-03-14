@@ -20,12 +20,17 @@ module load sevpy
 
 mongod --config /hpc/local/CentOS7/dhl_ec/software/sevpy/1/etc/mongod.conf &
 
-/home/dhl_ec/hseverin/deploy/application/JobHandler/mongo_handler.py monitor_mongo ${START} ${RT}
-
-# script should be terminated at this point, if monitor script finishes before runtime has elapsed,
+ping="$(/home/dhl_ec/hseverin/deploy/application/JobHandler/mongo_handler.py monitor_mongo ${START} ${RT})"
+echo ${SECONDS}
+# database should be terminated at this point, if monitor script finishes before runtime has elapsed,
 # in this case we make the steps to shut down cleanly instead of getting a sigkill
-mongod --shutdown --config /hpc/local/CentOS7/dhl_ec/software/sevpy/1/etc/mongod.conf
+if [ ${ping} == "ok" ];
+then
+    mongod --shutdown --config /hpc/local/CentOS7/dhl_ec/software/sevpy/1/etc/mongod.conf
 
-rm /hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/mon.conf
+    rm /hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/mon.conf
 
-echo "early shutdown at $(date)" > /hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/monrun.log
+    echo "early shutdown at $(date)" > /hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/monrun.log
+else
+    echo "normal shutdown at $(date)" > /hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/monrun.log
+fi

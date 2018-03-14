@@ -1,7 +1,7 @@
 #!/hpc/local/CentOS7/dhl_ec/software/sevpy/1/bin/python
 
 from pymongo import MongoClient, errors
-from time import sleep
+from time import sleep, time
 from os import path, remove
 import timebuddy
 import subprocess
@@ -37,6 +37,16 @@ class MongoHandler:
         logger.info(self.monip)
         logger.info(self.monhost)
 
+    def __ping(self):
+        try:
+            client = MongoClient(self.monip)
+            result = client.admin.command('ping')
+            if result.get('ok'):
+                return True
+        except errors.ServerSelectionTimeoutError:
+            "expected connection error"
+            return False
+
     def launch_mongo(self, mongo, rt, vmem):
         self.runtime = rt
         self.vmem = vmem
@@ -55,13 +65,13 @@ class MongoHandler:
 
         def __qsub_job(rt, vmem):
             # add 20 min to runtime for database run
-            monrt = timebuddy.timeformat(rt).add_min(20)
+            monrt = timebuddy.timeformat(rt).add_min(60)
             logger.info('db runtime is: {}'.format(monrt))
             print('db runtime is: {}'.format(monrt))
             print('db vmem is: {}'.format(vmem))
             logger.info('db vmem is {}'.format(vmem))
             subprocess.call('qsub -l h_rt={0} -l h_vmem={1} {2} {0}'
-                            .format('01:00:00', '30G', setupjob), shell=True)
+                            .format('01:45:00', '30G', setupjob), shell=True)
 
         def __fetch_node_info():
             wait = 0
@@ -74,22 +84,12 @@ class MongoHandler:
 
         def __mongo_alive():
             wait = 0
-            while not __ping():
-                __ping()
+            while not self.__ping():
+                self.__ping()
                 wait += 1
                 if wait > 10:
                     logger.info('tried pinging 6 times')
                     raise MongoHandlerError('waiting too long for mongo alive')
-
-        def __ping():
-            try:
-                client = MongoClient(self.monip)
-                result = client.admin.command('ping')
-                if result.get('ok'):
-                    return True
-            except errors.ServerSelectionTimeoutError:
-                "expected connection error"
-                return False
 
         __monconf_check()
         __qsub_job(self.runtime, self.vmem)
@@ -117,17 +117,28 @@ class MongoHandler:
                              .format(timebuddy.time()))
 
     def monitor_mongo(self, start, rt):
-        buffer = 240
+        buffer = 120
         # start timer of mongo script
-        timer = timebuddy.runtimer()
+        timer = time()
         # format runtime parameter to seconds
         rt = timebuddy.timeformat(rt)
         maxtime = rt.to_seconds() - buffer
+
+        logger.info('maxtime start {}'.format(str(maxtime)))
+        if maxtime < buffer:
+            maxtime = buffer
         # return to parent program if maxtime get exceeded
-        timepast = int(timer) + int(start)
+        timepast = int(time()-timer) + int(start)
+        logger.info('timepast start: {}'.format(str(timepast)))
         while timepast < maxtime:
-            sleep(10)
-            timepast = int(timer) + int(start)
+            timepast = int(time()-timer) + int(start)
+        logger.info('timepast: {}'.format(str(timepast)))
+        logger.info('maxtime {}'.format(str(maxtime)))
+        self.__get_host_info()
+        if self.__ping():
+            print('ok')
+        else:
+            print('nope')
 
     def stop_mongo(self, mongo, jids):
         if not mongo:

@@ -139,7 +139,8 @@ class Processor:
                             .format(meta_analysis), shell=True)
             # # call MAGMA meta_analysis, (per chromosome chunk) wait on preprocessing operation
             subprocess.call('{0} meta_analysis_chunker'.format(gene_mapper), shell=True)
-            # do loop here otherwise db shuts to early or not?
+
+        # do GTEx and Drugdb annotations on GWASdb
 
         # mongo will be shut down after all the jobs complete
         mongo_handle.stop_mongo(params.mongo, ['meta_analysis, MAGMA_meta*'])
@@ -199,8 +200,6 @@ class Processor:
         job = job_computer.ComputeJobParam(data.path, data.header_indices, data.skip,
                                            params.chunksize, params.subchunk, params.method)
         num_jobs = job.compute()
-        print(params.vmem)
-        print(params.runtime)
 
         subprocess.call('qsub -t 1-{} -N create -l h_rt={} -l h_vmem={} {} {} --config={} --index="{}"'
                         .format(num_jobs, params.runtime, params.vmem,

@@ -20,7 +20,8 @@ filemap = {1: 'Artery_Aorta.v7.signif_variant_gene_pairs.txt.gz',
            5: 'Cells_Transformed_fibroblasts.v7.signif_variant_gene_pairs.txt.gz',
            6: 'Heart_Atrial_Appendage.v7.signif_variant_gene_pairs.txt.gz',
            7: 'Heart_Left_Ventricle.v7.signif_variant_gene_pairs.txt.gz',
-           8: 'Heart_Left_Ventricle.v7.signif_variant_gene_pairs.txt.gz'}
+           8: 'Heart_Left_Ventricle.v7.signif_variant_gene_pairs.txt.gz',
+           9: 'Whole_Blood.v7.signif_variant_gene_pairs.txt.gz'}
 
 
 def get_mongo_client():
@@ -41,7 +42,7 @@ def init_operations():
     datanum = argv[1]
     filepath = gtexdir+filemap.get(datanum)
     client = get_mongo_client()
-    collection = init_db(client, dbname='gtex', colname='v7')
+    collection = init_db(client, dbname='GTEx', colname='v7')
     # create index for database on "SNP"
     collection.create_index([("rsid", ASCENDING)])
     collection.create_index([("variant_id", ASCENDING)])
