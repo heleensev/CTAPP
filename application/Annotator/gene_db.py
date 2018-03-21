@@ -23,6 +23,10 @@ def get_mongo_client():
 
 def init_db(client, dbname, colname):
     db = client[dbname]
+    col_names = list(db.collection_names())
+    # if collection already exists, append suffix
+    if colname in col_names:
+        colname = '{}_1'.format(colname)
     collection = db[colname]
     return collection
 
@@ -44,9 +48,10 @@ def gene_update(studyID, prefix, annal):
 
     client = get_mongo_client()
     colname = ''.join(timebuddy.date().split('-'))
-    col = init_db(client, 'GWASgenes', 'genes{}'.format(colname))
-    # create index if it not already exists
-    col.create_index([('GENE', ASCENDING), ('SNPS', ASCENDING)], unique=True)
+    col = init_db(client, 'MetaGWAS', 'genes{}'.format(colname))
+    # create indexes if it not already exists
+    col.create_index([('GENE', ASCENDING)], unique=True)
+    col.create_index([('STUDY.StudyID', ASCENDING)])
     # parse MAGMA gene annotation output and write to database
     parse_MAGMA_annot(studyID, prefix, col)
     # if only the annotation was done, terminate here
@@ -62,13 +67,13 @@ def parse_MAGMA_genes(ID, col):
     genesdf = pd.read_csv(genes_file, delim_whitespace=True, header=0)
 
     # gene parameters that are the same for every GWAS study
-    baseparams = ['GENE', 'CHR', 'START', 'STOP']
-    genesparam = genesdf[baseparams]
-    # convert appropriate fields to ints
-    genesparam = genesparam.astype(int)
+    genesdf[['START', 'STOP']] = genesdf[['START', 'STOP']].astype(int)
+    genesdf[['CHR', 'GENE']] = genesdf[['CHR', 'GENE']].astype(str)
+    # convert appropriate fields to int
+    genesparam = genesdf['GENE', 'CHR', 'START', 'STOP']
     # gene parameters that are study specific
     studyparam = ['NSNPS', 'NPARAM', 'N', 'ZSTAT', 'P', 'RSQ']
-    studyspecs = genesdf[studyparam]
+    studyspecs = genesdf[[studyparam]]
     # convert appropriate fields to floats
     studyspecs[['NPRAM', 'ZSTAT', 'P', 'RSQ']] = studyspecs[['NPRAM', 'ZSTAT' 'P', 'RSQ']].astype(float)
     # convert appropriate fields to ints
@@ -86,6 +91,12 @@ def parse_MAGMA_genes(ID, col):
     bulk.append(UpdateOne(query_filter, query_update, upsert=True))
 
     bulk_exec(col, bulk)
+
+    "new function"
+
+    genes_file = os.path.join(magma_io, '{}.genes.out'.format(ID))
+    genesdf = pd.read_csv(genes_file, delim_whitespace=True, header=0)
+
 
 
     """
@@ -122,7 +133,6 @@ def parse_MAGMA_annot(ID, prefix, col):
             chr, start, stop = (loc[0], loc[1], loc[2])
             snps = line[2:]
             snps[-1] = snps[-1].strip('\n')
-            snps = [int(snp.strip('rs')) for snp in snps]
 
             if prefix == 'rs':
                 # query filter, creates document if it does not exist already
@@ -132,10 +142,15 @@ def parse_MAGMA_annot(ID, prefix, col):
             else:
                 # prefix is 'no_rs', existing document get updated with annotation
                 # query filter, finds the exact field (StudyID) to perform update on
-                query_filter = {'GENE': gene, 'CHR': chr, 'START': start, 'STOP': stop}
-                q_filter = query_filter.update({'STUDY': {'$elemMatch': {'StudyID': ID}}})
+                # query_filter = {'GENE': gene, 'CHR': chr, 'START': start, 'STOP': stop}
+                # q_filter = query_filter.update({'STUDY': {'$elemMatch': {'StudyID': ID}}})
+                # # modify the update query so that it contains the study ID and the push operator
+                # q_update = {'$push': {'STUDY.$.SNPS': {'$each': [snps]}}}
+
+                # query filter, creates document if it does not exist already
+                q_filter = {'GENE': gene, 'CHR': chr, 'START': start, 'STOP': stop}
                 # modify the update query so that it contains the study ID and the push operator
-                q_update = {'$push': {'STUDY.$.SNPS': {'$each': [snps]}}}
+                q_update = {'$push': {'STUDY': {'StudyID': ID, 'SNPS': snps}}}
 
             # add the query update to the bulk pipelineresults
             bulk.append(UpdateOne(q_filter, q_update, upsert=True))
@@ -160,22 +175,19 @@ def parse_MAGMA_meta(col, chrno):
 
     genesdf = pd.read_csv(genes_file, delim_whitespace=True, header=0)
 
-    # gene parameters that are the same for every GWAS study
-    baseparams = ['GENE', 'CHR', 'START', 'STOP']
-    genesparam = genesdf[baseparams]
-    # convert all fields to int
-    genesparam = genesparam.astype(int)
+    # gene ids function as filter
+    geneids = genesdf['GENE'].astype(str)
 
     # gene parameters that are specific for the meta analysis
     studyparam = ['NSNPS', 'NPARAM', 'N', 'ZSTAT', 'P', 'RSQ', 'DATASETS']
-    studyspecs = genesdf[studyparam]
+    studyspecs = genesdf[[studyparam]]
     # convert appropriate fields to ints
     studyspecs[['NSNPS', 'N', 'DATASETS']] = studyspecs[['NSNPS', 'N', 'DATASETS']].astype(int)
     # convert appropriate fields to floats
     studyspecs[['NPRAM', 'ZSTAT', 'P', 'RSQ']] = studyspecs[['NPRAM', 'ZSTAT', 'P', 'RSQ']].astype(float)
 
     # turn dataframes into dictionaries to process in db insertion
-    query_filter = genesparam.to_dict(orient='records')
+    query_filter = geneids.to_dict(orient='records')
     query_update = studyspecs.to_dict(orient='records')
 
     bulk = list()

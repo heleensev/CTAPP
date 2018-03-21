@@ -30,6 +30,9 @@ logger.info('starting GWAS_db at: {}'.format(timebuddy.time()))
 
 
 """
+
+col.insert({"SNP": 12565280, "CHR": 1, "BP": 711153, "REF": "A"})
+
 db.col.update({"SNP": 12565280, "CHR": 1, "BP": 711153, "REF": "A"},
 {$push: {VAR: {"ALT": "C", "FRQ": 0.0662, "OR": -0.914, "SE": 0.38923}}}, {upsert:true})
 
@@ -62,9 +65,9 @@ def init_GWAS_db(data, study, client):
     rs, no_rs = data
     # collection name is the date of runtime like: 20180130
     colname = ''.join(timebuddy.date().split('-'))
-    col = init_db(client, 'MetaGWAS', 'meta{}'.format(colname))
+    col = init_db(client, 'MetaGWAS', 'snps{}'.format(colname))
     # create index for collection
-    col.create_index([("SNP", ASCENDING)])
+    col.create_index([("SNP", ASCENDING)], {'unique': True})
     # create json docs and add to a pipeline
     bulk_ob = data_to_json(rs, 'rs', study)
     # push pipeline to database
@@ -77,6 +80,10 @@ def init_GWAS_db(data, study, client):
 
 def init_db(client, dbname, colname):
     db = client[dbname]
+    col_names = list(db.collection_names())
+    # if collection already exists, append suffix
+    if colname in col_names:
+        colname = '{}_1'.format(colname)
     collection = db[colname]
     return collection
 
@@ -125,6 +132,7 @@ def data_to_json(data, prefix, study):
         loc_info['CHR'] = int(chrm)
         loc_info['BP'] = int(bp)
         loc_info['REF'] = a1
+        loc_info['TISSUES'] = []
         q_update = {'$setOnInsert': loc_info}
         # append the update to the bulk pipeline
         bulk.append(UpdateOne(q_filter, q_update, upsert=True))

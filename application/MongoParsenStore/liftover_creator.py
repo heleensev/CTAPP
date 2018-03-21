@@ -81,7 +81,7 @@ def snp_synonyms(df, client):
     :param df: complete dataframe of RsMergeArch file
     :param client: mongo client
     """
-    collection = init_db(client, colname='synonyms', dbname='rsliftover')
+    collection = init_db(client, colname='synonyms', dbname='IDmapping')
     # filter out the duplicate current rs ids and sort them
     df['idx_org'] = df.groupby(['rscur']).rscur.transform('idxmin')
     df = df[df.duplicated(subset=['rscur'], keep='first')]
@@ -114,7 +114,7 @@ def snp_liftover(mergearch, rshistory, client):
     :return:
     """
 
-    collection = init_db(client, colname='mergearch', dbname='rsliftover')
+    collection = init_db(client, colname='mergearch', dbname='IDmapping')
 
     # gives you all the rows without the rsm ones, but Nans are thrown out
     nonrsm = rshistory[rshistory.comment.str.contains("[^(rsm)]", na=False)]

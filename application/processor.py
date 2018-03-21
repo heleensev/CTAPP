@@ -8,12 +8,10 @@
 #$ -N processor
 
 import os
-import re
-import sys
-import fire
-import platform
 import subprocess
-import timebuddy
+import sys
+
+import fire
 
 base = '/hpc/local/CentOS7/dhl_ec/software/ctapp'
 chunker = '/hpc/local/CentOS7/dhl_ec/software/ctapp/application/map_chunker.py'
@@ -38,7 +36,7 @@ from application.GWASParser import ref_checker
 from application.GWASParser import GWASio
 from application.GWASParser import error_logger
 from application.MetaReader import config
-from application.MongoParsenStore import GWAS_db
+from application.Annotator import GWAS_db
 
 logpath = os.path.join('/hpc/local/CentOS7/dhl_ec/software/ctapp/', 'logs/processor.log')
 monconf_path = '/hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/mon.conf'

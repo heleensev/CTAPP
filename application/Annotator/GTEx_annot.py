@@ -67,21 +67,27 @@ def get_records(collection):
 
 
 def update_gwas(records, col):
+    pipeline = list()
+    complements = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C'}
 
     for doc in records:
         if 'rsid' in records:
             snp = doc.get('rsid')
+            query = UpdateOne({'SNP': snp}, {})
+
         else:
+            snp_list = list()
             var = doc.get('variant_id')
             vrsplt = var.split('_')
-
-            "use OR queries!!!"
-            if len(vrsplt) == 3:
-                snp = 'chr:{}:{}:{}'.format(vrsplt[0], vrsplt[1], vrsplt[2])
-                "1_1077854_G_A_b37"
-                "chr1:4473577:I"
-            elif len(vrsplt) > 3:
-                snp = 'chr:{}:{}:{}:{}'.format(vrsplt[0], vrsplt[1], vrsplt[2], vrsplt[3])
+            "use $in operator!!"
+            if len(vrsplt) == 5:
+                chr, bp, a1, a2 = vrsplt[0], vrsplt[1], vrsplt[2], vrsplt[3]
+                com_a1 = ''.join([complements.get(nuc) for nuc in a1])
+                com_a2 = ''.join([complements.get(nuc) for nuc in a2])
+                snp_list.append('chr{}:{}:{}:{}'.format(chr, bp, a1, a2))
+                snp_list.append('chr{}:{}:{}:{}'.format(chr, bp, a2, a1))
+                snp_list.append('chr{}:{}:{}:{}'.format(chr, bp, com_a1, com_a2))
+                snp_list.append('chr{}:{}:{}:{}'.format(chr, bp, com_a2, com_a1))
 
 
     pass

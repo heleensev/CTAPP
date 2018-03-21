@@ -10,7 +10,7 @@
 START=$SECONDS
 RT=$1
 
-rm /hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/monrun.log
+[ -f /hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/monrun.log ] && rm /hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/monrun.log
 
 MONIP="$(ifconfig compute | grep "inet " | awk -F' ' '{print $2}')"
 echo "MONIP=$MONIP" > /hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/mon.conf

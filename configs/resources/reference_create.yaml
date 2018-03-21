@@ -6,7 +6,7 @@ parameters:
     mongo: true
     runtime: 00:45:00
     vmem: 5G
-    mon_vmem: 30G
+    mon_vmem: 40G
 
 data_info:
   - properties:

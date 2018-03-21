@@ -44,7 +44,7 @@ def init_operations():
     client = get_mongo_client()
     collection = init_db(client, dbname='GTEx', colname='v7')
     # create index for database on "SNP"
-    collection.create_index([("rsid", ASCENDING)])
+    collection.create_index([("rs_id", ASCENDING)])
     collection.create_index([("variant_id", ASCENDING)])
     collection.create_index([('gene_id', ASCENDING)])
     idmap = read_idmap()

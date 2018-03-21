@@ -5,17 +5,18 @@
 #$ -e ~/logs/deploy/
 #$ -N genemapper
 
-from glob import glob
-import pandas as pd
-import subprocess
 import logging
-import fire
 import os
+import subprocess
 import sys
+from glob import glob
+
+import fire
+import pandas as pd
 
 sys.path.append('/home/dhl_ec/hseverin/deploy')
 from application.GWASParser import GWASio
-from application.MongoParsenStore import gene_db
+from application.Annotator import gene_db
 
 chunker_path = '/hpc/local/CentOS7/dhl_ec/software/ctapp/application/map_chunker.py'
 gene_mapper = '/hpc/local/CentOS7/dhl_ec/software/ctapp/application/gene_mapper.py'

@@ -71,7 +71,7 @@ class MongoHandler:
             print('db vmem is: {}'.format(vmem))
             logger.info('db vmem is {}'.format(vmem))
             subprocess.call('qsub -l h_rt={0} -l h_vmem={1} {2} {0}'
-                            .format('01:45:00', '30G', setupjob), shell=True)
+                            .format('01:45:00', '40G', setupjob), shell=True)
 
         def __fetch_node_info():
             wait = 0
@@ -125,8 +125,7 @@ class MongoHandler:
         maxtime = rt.to_seconds() - buffer
 
         logger.info('maxtime start {}'.format(str(maxtime)))
-        if maxtime < buffer:
-            maxtime = buffer
+
         # return to parent program if maxtime get exceeded
         timepast = int(time()-timer) + int(start)
         logger.info('timepast start: {}'.format(str(timepast)))
