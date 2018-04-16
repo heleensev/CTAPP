@@ -3,16 +3,19 @@
 from pymongo import MongoClient, errors
 from time import sleep, time
 from os import path, remove
+from subprocess import Popen
 import timebuddy
 import subprocess
 import logging
 import fire
 
-logging.basicConfig(filename='mongohandler.log', filemode='a', level=logging.DEBUG)
+logging.basicConfig(filename='/hpc/local/CentOS7/dhl_ec/software/ctapp/logs/mongohandler.log', filemode='a', level=logging.DEBUG)
+
 logger = logging.getLogger()
 
 config_path = '/hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/mon.conf'
 setupjob = '/hpc/local/CentOS7/dhl_ec/software/ctapp/arrayjob/dbsetup.sh'
+local_setupjob = '/hpc/local/CentOS7/dhl_ec/software/ctapp/arrayjob/local_dbsetup.sh'
 shutjob = '/hpc/local/CentOS7/dhl_ec/software/ctapp/arrayjob/shutdb.sh'
 
 class MongoHandlerError(Exception):
@@ -47,7 +50,7 @@ class MongoHandler:
             "expected connection error"
             return False
 
-    def launch_mongo(self, mongo, rt, vmem):
+    def launch_mongo(self, mongo, rt, vmem, local=False):
         self.runtime = rt
         self.vmem = vmem
 
@@ -65,13 +68,19 @@ class MongoHandler:
 
         def __qsub_job(rt, vmem):
             # add 20 min to runtime for database run
-            monrt = timebuddy.timeformat(rt).add_min(60)
+            monrt = timebuddy.timeformat(rt).add_min(20)
             logger.info('db runtime is: {}'.format(monrt))
             print('db runtime is: {}'.format(monrt))
             print('db vmem is: {}'.format(vmem))
             logger.info('db vmem is {}'.format(vmem))
-            subprocess.call('qsub -l h_rt={0} -l h_vmem={1} {2} {0}'
-                            .format('01:45:00', '40G', setupjob), shell=True)
+            if local:
+                subprocess.call('{0} "{1}"'
+                                .format(local_setupjob, "00:01:00", '&'), shell=True)
+
+            else:
+                subprocess.call('qsub -l h_rt={0} -l h_vmem={1} {2} {0}'
+                                .format('01:45:00', '40G', setupjob), shell=True)
+            print('done launching db')
 
         def __fetch_node_info():
             wait = 0
@@ -123,21 +132,16 @@ class MongoHandler:
         # format runtime parameter to seconds
         rt = timebuddy.timeformat(rt)
         maxtime = rt.to_seconds() - buffer
-
-        logger.info('maxtime start {}'.format(str(maxtime)))
-
         # return to parent program if maxtime get exceeded
         timepast = int(time()-timer) + int(start)
-        logger.info('timepast start: {}'.format(str(timepast)))
         while timepast < maxtime:
             timepast = int(time()-timer) + int(start)
-        logger.info('timepast: {}'.format(str(timepast)))
-        logger.info('maxtime {}'.format(str(maxtime)))
         self.__get_host_info()
         if self.__ping():
             print('ok')
         else:
             print('nope')
+
 
     def stop_mongo(self, mongo, jids):
         if not mongo:
@@ -150,3 +154,5 @@ class MongoHandler:
 
 if __name__ == '__main__':
     fire.Fire(MongoHandler)
+
+

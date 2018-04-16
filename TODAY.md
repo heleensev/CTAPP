@@ -8,7 +8,7 @@ _____________________________________________
 
 ##### MAKE
 
-    * GWASdb add neseccary arrays like tissues and drugs
+    * GWASdb add necessary arrays like tissues and drugs
 
 ###### MAGMAparser
  * modify local arrayjob files before overwriting remote

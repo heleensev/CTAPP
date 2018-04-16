@@ -1,7 +1,7 @@
 #!/bin/bash
 #$ -S /bin/bash
 #$ -cwd
-#$ -l h_rt=00:20:00
+#$ -l h_rt=00:02:00
 #$ -l h_vmem=15G
 #$ -o ~/logs/deploy/
 #$ -e ~/logs/deploy/
@@ -9,7 +9,7 @@
 
 START=$SECONDS
 RT=$1
-echo $RT
+
 [ -f /hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/monrun.log ] && rm /hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/monrun.log
 
 MONIP="$(ifconfig compute | grep "inet " | awk -F' ' '{print $2}')"
@@ -20,14 +20,14 @@ echo "MONHOST=$HOSTNAME" >> /hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/mo
 module load sevpy
 
 # launch db process
-#mongod --config /hpc/local/CentOS7/dhl_ec/software/sevpy/1/etc/mongod.conf &
+mongod --config /hpc/local/CentOS7/dhl_ec/software/sevpy/1/etc/mongod.conf &
 
 # ping database
 ping="$(/hpc/local/CentOS7/dhl_ec/software/ctapp/application/JobHandler/mongo_handler.py monitor_mongo ${START} ${RT})"
 echo $SECONDS
 # database should be terminated at this point, if monitor script finishes before runtime has elapsed,
 # in this case we make the steps to shut down cleanly instead of getting a sigkill
-if [ "${ping}" == "ok" ];
+if [ ${ping} == "ok" ];
 then
     mongod --shutdown --config /hpc/local/CentOS7/dhl_ec/software/sevpy/1/etc/mongod.conf
 
