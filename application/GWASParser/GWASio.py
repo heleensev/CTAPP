@@ -8,6 +8,7 @@ filename = str()
 logger = logging.getLogger(__name__)
 
 magma_datadir = '/hpc/local/CentOS7/dhl_ec/software/ctapp/data/magma'
+plots_datadir = '/hpc/local/CentOS7/dhl_ec/software/ctapp/data/plots/input'
 
 
 def init_reader(study):
@@ -113,6 +114,38 @@ def GWAS_out(data, ID):
 
             data.to_csv(filepath, sep='\t', index=None, header=True)
 
+            # slice data to create input file for manhattan.R
+            to_drop = [cols.index(c) for c in cols if c not in ["CHR", "BP", "P"]]
+            data.drop(data.columns[[to_drop]], axis=1, inplace=True)
+
+            # reorder columns
+            ordered_cols = ["CHR", "BP", "P"]
+            data = data.reindex(columns=ordered_cols, copy=False)
+            data.columns = ordered_cols
+
+            # write data chunk to csv file
+            filename = 'manh_{}_{}_{}.csv'.format(ID, taskid, thr)
+            filepath = os.path.join(plots_datadir, filename)
+
+            data.to_csv(filepath, sep='\t', index=None, header=True)
+
+            # slice data P val column for qqplot.R
+            data = data['P']
+
+            # write data chunk to csv file
+            filename = 'qq_{}_{}_{}.csv'.format(ID, taskid, thr)
+            filepath = os.path.join(plots_datadir, filename)
+
+            data.to_csv(filepath, sep='\t', index=None, header=True)
+
+
+def chunk_qqplot(ID):
+
+   filenames = sorted(glob(os.path.join(magma_datadir, '{}_{}_*_*.csv'.format(ID))))
+
+
+
+
 
 def concat(ID):
     """
@@ -120,8 +153,6 @@ def concat(ID):
     gene annotation and gene analysis
     :return:
     """
-    from glob import glob
-
     for prefix in ['rs', 'no_rs']:
         filenames = sorted(glob(os.path.join(magma_datadir, '{}_{}_*_*.csv'.format(prefix, ID))))
         if filenames:

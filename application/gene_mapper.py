@@ -80,7 +80,7 @@ class MapGenes:
                 annal_pass = analyze(form_loc_data)
             if annot_pass:
                 self.__split_gene_annot(id)
-            self.__MAGMA_to_db(id, prefix, annot_pass, annal_pass)
+                gene_db.gene_update(id, prefix, annal_pass)
 
     @staticmethod
     def meta_analysis_chunker():
@@ -141,17 +141,6 @@ class MapGenes:
             path = os.path.join(magma_io, '{}_chr{}.csv'.format(studyID, chr))
             group.to_csv(path, header=True, sep='\t', index=False)
 
-    def __MAGMA_to_db(self, id, prefix, annot, annal):
-        """
-        write results of MAGMA to database.
-        For the SNPs with rs ID (those that are mapped to 1000genome) have an
-        output file of both gene annotation and gene analysis
-        For the SNPs with no rs IDs (those that are not mapped to 1000genome)
-        have only a gene annotation output file
-        :return:
-        """
-        if annot:
-            gene_db.gene_update(id, prefix, annal)
 
 if __name__ == '__main__':
     fire.Fire(MapGenes)

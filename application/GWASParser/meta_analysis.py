@@ -88,7 +88,7 @@ class MetaAnalysis:
     def bulk_exec(self, col, bulk_obj):
         try:
             col.bulk_write(bulk_obj)
-        except BulkWriteError as bwe:
+        except BulkWriteError as bwe: 
             logger.info(bwe.details)
 
     def fetch_documents(self, col, chrm, chnk_no):
