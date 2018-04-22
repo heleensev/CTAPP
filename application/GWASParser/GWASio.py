@@ -1,4 +1,5 @@
 import logging
+import threading
 import re
 import os
 from glob import glob
@@ -9,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 magma_datadir = '/hpc/local/CentOS7/dhl_ec/software/ctapp/data/magma'
 plots_datadir = '/hpc/local/CentOS7/dhl_ec/software/ctapp/data/plots/input'
+monconf_path = '/hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/mon.conf'
+
 
 
 def init_reader(study):
@@ -70,7 +73,23 @@ def check_sep(path):
         logger.error("Error occured during separator check: {}".format(e))
 
 
+
 def GWAS_out(data, ID):
+    # get task id to differentiate between the file chunk in the namespace
+    taskid = os.environ["SGE_TASK_ID"]
+    # get thread id to discern chunk from other processes in the filename
+    thrid = re.split('[-_,]', str(threading.current_thread()))[2]
+
+    rs, no_rs = data
+
+    for data, prefix in zip([rs, no_rs], ['rs', 'no_rs']):
+        if not data.empty:
+            cols = list(data.columns)
+            chunk_MAGMA(data, ID, cols, taskid, thrid, prefix)
+            chunk_manhattan_qq(data, ID, cols, taskid, thrid)
+
+
+def chunk_MAGMA(data, ID, cols, taskid, thrid, prefix):
 
     """
     Final step of GWAS preprocessor, prepare GWAS csv's for MAGMA processing
@@ -80,71 +99,53 @@ def GWAS_out(data, ID):
     :param ID:
     :return:
     """
-    # import threading for identification of current thread
-    import threading
-    taskid = os.environ["SGE_TASK_ID"]
+    # list unwanted columns
+    to_drop = [cols.index(c) for c in cols if c not in ['SNP', 'CHR', 'BP', 'P', 'N']]
+    # drop unwanted columns
+    data.drop(data.columns[[to_drop]], axis=1, inplace=True)
 
-    rs, no_rs = data
+    # current columns in data
+    cols = list(data.columns)
 
-    for data, prefix in zip([rs, no_rs], ['rs', 'no_rs']):
-        if not data.empty:
-            cols = list(data.columns)
+    # reorder columns, put N column at the end if present
+    ordered_cols = ['SNP', 'CHR', 'BP', 'P']
+    if 'N' in cols:
+        ordered_cols += ['N']
 
-            # list unwanted columns
-            to_drop = [cols.index(c) for c in cols if c not in ['SNP', 'CHR', 'BP', 'P', 'N']]
-            # drop unwanted columns
-            data.drop(data.columns[[to_drop]], axis=1, inplace=True)
+    data = data.reindex(columns=ordered_cols, copy=False)
+    data.columns = ordered_cols
 
-            # current columns in data
-            cols = list(data.columns)
+    filename = '{}_{}_{}_{}.csv'.format(prefix, ID, taskid, thrid)
+    filepath = os.path.join(magma_datadir, filename)
 
-            # reorder columns, put N column at the end if present
-            ordered_cols = ['SNP', 'CHR', 'BP', 'P']
-            if 'N' in cols:
-                ordered_cols += ['N']
-
-            data = data.reindex(columns=ordered_cols, copy=False)
-            data.columns = ordered_cols
-
-            # get thread id to discern chunk from other processes in the filename
-            thr = re.split('[-_,]', str(threading.current_thread()))[2]
-
-            filename = '{}_{}_{}_{}.csv'.format(prefix, ID, taskid, thr)
-            filepath = os.path.join(magma_datadir, filename)
-
-            data.to_csv(filepath, sep='\t', index=None, header=True)
-
-            # slice data to create input file for manhattan.R
-            to_drop = [cols.index(c) for c in cols if c not in ["CHR", "BP", "P"]]
-            data.drop(data.columns[[to_drop]], axis=1, inplace=True)
-
-            # reorder columns
-            ordered_cols = ["CHR", "BP", "P"]
-            data = data.reindex(columns=ordered_cols, copy=False)
-            data.columns = ordered_cols
-
-            # write data chunk to csv file
-            filename = 'manh_{}_{}_{}.csv'.format(ID, taskid, thr)
-            filepath = os.path.join(plots_datadir, filename)
-
-            data.to_csv(filepath, sep='\t', index=None, header=True)
-
-            # slice data P val column for qqplot.R
-            data = data['P']
-
-            # write data chunk to csv file
-            filename = 'qq_{}_{}_{}.csv'.format(ID, taskid, thr)
-            filepath = os.path.join(plots_datadir, filename)
-
-            data.to_csv(filepath, sep='\t', index=None, header=True)
+    data.to_csv(filepath, sep='\t', index=None, header=True)
 
 
-def chunk_qqplot(ID):
+def chunk_manhattan_qq(data, ID, cols, taskid, thr):
 
-   filenames = sorted(glob(os.path.join(magma_datadir, '{}_{}_*_*.csv'.format(ID))))
+    # slice data to create input file for manhattan.R
+    to_drop = [cols.index(c) for c in cols if c not in ["CHR", "BP", "P"]]
+    data.drop(data.columns[[to_drop]], axis=1, inplace=True)
 
+    # reorder columns
+    ordered_cols = ["CHR", "BP", "P"]
+    data = data.reindex(columns=ordered_cols, copy=False)
+    data.columns = ordered_cols
 
+    # write data chunk to csv file
+    filename = 'manh_{}.csv'.format(ID)
+    filepath = os.path.join(plots_datadir, filename)
+    with open(filepath, 'a') as outfile:
+        data.to_csv(outfile, sep='\t', index=None, header=True)
 
+    # slice data P val column for qqplot.R
+    data = data['P']
+
+    # write data chunk to csv file
+    filename = 'qq_{}.csv'.format(ID)
+    filepath = os.path.join(plots_datadir, filename)
+    with open(filepath, 'a') as outfile:
+        data.to_csv(outfile, sep='\t', index=None, header=True)
 
 
 def concat(ID):

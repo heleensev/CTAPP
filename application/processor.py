@@ -7,21 +7,25 @@
 #$ -e ~/logs/deploy/
 #$ -N processor
 
+from glob import glob
 import os
 import subprocess
+import itertools
 import sys
 
 import fire
 
 base = '/hpc/local/CentOS7/dhl_ec/software/ctapp'
-chunker = '/hpc/local/CentOS7/dhl_ec/software/ctapp/application/map_chunker.py'
-
+chunker = base+'/application/map_chunker.py'
 meta_analysis = 'GWASParser/meta_analysis.py'
 gene_mapper = 'gene_mapper.py'
 gene_mongo = 'MongoParsenStore/gene_db.py'
 geneid_mongo = 'MongoParsenStore/geneID_db.py'
 drugbank_mongo = 'MongoParsenStore/drugbank_db.py'
 gtex_mongo = 'MongoParsenStore/gtex_db.py'
+call_plotter = base+'/application/processor.py'
+qq_plotter = ''
+mht_plotter = ''
 
 sys.path.append(base)
 
@@ -40,7 +44,8 @@ from application.Annotator import GWAS_db
 
 logpath = os.path.join('/hpc/local/CentOS7/dhl_ec/software/ctapp/', 'logs/processor.log')
 monconf_path = '/hpc/local/CentOS7/dhl_ec/software/sevpy/1/config/mon.conf'
-
+plots_datadir = '/hpc/local/CentOS7/dhl_ec/software/ctapp/data/plots/input'
+plots_out = '/hpc/local/CentOS7/dhl_ec/software/ctapp/data/plots/output'
 
 class Processor:
 
@@ -115,6 +120,11 @@ class Processor:
         # genes_col = self.__get_collection(cli, 'GWASgenes', 'genes{}'.format(colname))
         # meta_col.drop()
         # genes_col.drop()
+        # compute all the possible combinations
+        combinations = list()
+        for i in range(2, len(studies) + 1):
+            comb = list(itertools.combinations(studies, i))
+            combinations.extend([list(c) for c in comb])
 
         for n, study in enumerate(studies):
             job = job_computer.ComputeJobParam(study.path, study.header_indices, study.skip,
@@ -135,6 +145,8 @@ class Processor:
             # perform meta analysis on GWAS information already written to the database and update
             subprocess.call('qsub -hold_jid pre_* -l h_rt=00:20:00 -l h_vmem=15G -t 1-24 {0} init_meta_analysis'
                             .format(meta_analysis), shell=True)
+            subprocess.call('qsub -hold_jid meta_analysis -l h_rt=00:20:00 -l h_vmem=15G 1-24 -t 1-{} {} plots {} {}'
+                            .format((len(studies)+len(combinations)), call_plotter, studies, combinations))
             # # call MAGMA meta_analysis, (per chromosome chunk) wait on preprocessing operation
             subprocess.call('{0} meta_analysis_chunker'.format(gene_mapper), shell=True)
 
@@ -170,6 +182,31 @@ class Processor:
         # write to a csv file, for later processing with MAGMA
         GWASio.GWAS_out(data, study.studyID)
         client.close()
+
+    @staticmethod
+    def plots(no_studies, combinations):
+        # get task ID for index (parallel processing)
+        ix = os.environ["SGE_TASK_ID"]
+        # get all filenames of plot format files
+        qq_files = sorted(glob(os.path.join(plots_datadir, 'qq_*.csv')))
+        mht_files = sorted(glob(os.path.join(plots_datadir, 'mht_*.csv')))
+
+        qqfile = qq_files[ix-1]
+        name = qqfile.split('qq_')[1].split('.csv')[0]
+        # if "_" in the name, Z score of multiple studies was computed, so stat = Z
+        stat = 'Z' if '_' in name else 'P'
+        # call qqplot.R as subprocess
+        subprocess.call('{} -p {} -r {} -o {} -s {} -f PNG '
+                        .format(qq_plotter, plots_datadir, qqfile, plots_out, stat), shell=True)
+        # if index is smaller or equal to amount of mht files, make both plots else just the QQ plot
+        # (for the combination of studies, there is no QQ plot to make)
+        if len(mht_files) >= ix:
+            mht_file = mht_files[ix-1]
+            name = mht_file.split('mht')[1].split('.csv')[0]
+            # call manhattan.R as subprocess
+            subprocess.call('{} -p {} -r {} -o {} -c FULL -f PNG -t QQ {} '
+                            .format(mht_plotter, plots_datadir, mht_file, plots_out, name), shell=True)
+
 
     def validate(self):
         """
